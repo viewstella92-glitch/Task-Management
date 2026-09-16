@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมุดงาน</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E7;
+    --paper-raised:#FBF8F1;
+    --ink:#2B2620;
+    --ink-faint:#8A7F6D;
+    --rule:#DCD2BC;
+    --rule-strong:#C9BD9F;
+    --procurement:#35577A;
+    --procurement-soft:#E4EAF0;
+    --tutoring:#4C6B4F;
+    --tutoring-soft:#E6EBE3;
+    --personal:#8B4B5C;
+    --personal-soft:#F1E3E5;
+    --accent:#B8482E;
+    --shadow: 2px 2px 0 rgba(43,38,32,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px);
+    background-size: 100% 2.1em;
+    color:var(--ink);
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background: var(--accent); color:var(--paper); }
+
+  .app{
+    max-width:980px;
+    margin:0 auto;
+    padding:2.6em 1.4em 5em;
+  }
+
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:1.6em;
+    padding-bottom:0.9em;
+    border-bottom:2px solid var(--ink);
+  }
+  header.top h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:2.1em;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.top .date{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85em;
+    color:var(--ink-faint);
+  }
+
+  /* Tabs styled as ledger dividers */
+  .tabs{
+    display:flex;
+    gap:0.4em;
+    margin-bottom:0;
+  }
+  .tab{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:1.05em;
+    padding:0.55em 1.3em 0.5em;
+    cursor:pointer;
+    border:2px solid var(--ink);
+    border-bottom:none;
+    border-radius:10px 10px 0 0;
+    background:var(--paper);
+    color:var(--ink-faint);
+    position:relative;
+    top:2px;
+    transition:transform 0.12s ease;
+  }
+  .tab:hover{ transform:translateY(-2px); }
+  .tab.active{
+    background:var(--paper-raised);
+    color:var(--ink);
+    top:0;
+    box-shadow: var(--shadow);
+  }
+  .tab[data-cat="procurement"].active{ border-color:var(--procurement); color:var(--procurement); }
+  .tab[data-cat="tutoring"].active{ border-color:var(--tutoring); color:var(--tutoring); }
+  .tab[data-cat="personal"].active{ border-color:var(--personal); color:var(--personal); }
+
+  .panel{
+    border:2px solid var(--ink);
+    border-radius:0 10px 10px 10px;
+    background:var(--paper-raised);
+    box-shadow:var(--shadow);
+    padding:1.6em;
+  }
+  .panel[data-cat="procurement"]{ border-color:var(--procurement); }
+  .panel[data-cat="tutoring"]{ border-color:var(--tutoring); }
+  .panel[data-cat="personal"]{ border-color:var(--personal); }
+
+  .quickadd{
+    display:flex;
+    gap:0.6em;
+    align-items:center;
+    padding-bottom:1.1em;
+    margin-bottom:1.1em;
+    border-bottom:1px dashed var(--rule-strong);
+    flex-wrap:wrap;
+  }
+  .quickadd input[type="text"]{
+    flex:1;
+    min-width:180px;
+    font-family:inherit;
+    font-size:1em;
+    padding:0.55em 0.2em;
+    border:none;
+    border-bottom:2px solid var(--rule-strong);
+    background:transparent;
+    color:var(--ink);
+    outline:none;
+  }
+  .quickadd input[type="text"]:focus{ border-bottom-color:var(--ink); }
+  .quickadd select, .quickadd input[type="date"]{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.82em;
+    padding:0.5em 0.5em;
+    border:1px solid var(--rule-strong);
+    border-radius:6px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .quickadd button{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85em;
+    padding:0.55em 1em;
+    border:1px solid var(--ink);
+    border-radius:6px;
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+  }
+  .quickadd button:hover{ opacity:0.85; }
+
+  .empty{
+    color:var(--ink-faint);
+    font-style:italic;
+    padding:1.2em 0;
+    font-family:'Fraunces', serif;
+  }
+
+  ul.tasks{ list-style:none; margin:0; padding:0; }
+  li.task{
+    display:flex;
+    align-items:center;
+    gap:0.7em;
+    padding:0.55em 0.2em;
+    border-bottom:1px solid var(--rule);
+    cursor:grab;
+  }
+  li.task.dragging{ opacity:0.4; }
+  li.task .handle{ color:var(--rule-strong); font-size:0.85em; cursor:grab; user-select:none; }
+  li.task input[type="checkbox"]{
+    width:1.15em; height:1.15em;
+    accent-color: var(--ink);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  li.task .name{ flex:1; font-size:0.98em; }
+  li.task.done .name{ text-decoration:line-through; color:var(--ink-faint); }
+  li.task .badge{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72em;
+    padding:0.18em 0.55em;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .badge.p-high{ background:#F4D9D2; color:#A03A22; }
+  .badge.p-med{ background:#F2E7C9; color:#8A6A1B; }
+  .badge.p-low{ background:#E1E7DD; color:#4C6B4F; }
+  li.task .due{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.75em;
+    color:var(--ink-faint);
+    white-space:nowrap;
+  }
+  li.task .del{
+    background:none; border:none; color:var(--ink-faint);
+    cursor:pointer; font-size:1em; padding:0.2em 0.3em;
+    opacity:0; transition:opacity .12s;
+  }
+  li.task:hover .del{ opacity:1; }
+
+  .done-toggle{
+    margin-top:1em;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78em;
+    color:var(--ink-faint);
+    cursor:pointer;
+    user-select:none;
+  }
+  .done-toggle:hover{ color:var(--ink); }
+  ul.tasks.done-list{ display:none; margin-top:0.6em; }
+  ul.tasks.done-list.show{ display:block; }
+
+  /* Daily log */
+  .log-section{
+    margin-top:2.2em;
+    padding-top:1.6em;
+    border-top:2px solid var(--ink);
+  }
+  .log-section h2{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:1.3em;
+    margin:0 0 0.7em;
+    color:var(--personal);
+  }
+  .log-add{
+    display:flex;
+    gap:0.6em;
+    margin-bottom:1.3em;
+  }
+  .log-add textarea{
+    flex:1;
+    font-family:inherit;
+    font-size:0.95em;
+    padding:0.6em 0.7em;
+    border:1px solid var(--rule-strong);
+    border-radius:8px;
+    background:var(--paper);
+    color:var(--ink);
+    resize:vertical;
+    min-height:2.6em;
+  }
+  .log-add button{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.85em;
+    padding:0 1.1em;
+    border:1px solid var(--personal);
+    border-radius:6px;
+    background:var(--personal);
+    color:var(--paper-raised);
+    cursor:pointer;
+  }
+  .log-day{ margin-bottom:1.3em; }
+  .log-day .day-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78em;
+    color:var(--accent);
+    margin-bottom:0.5em;
+    letter-spacing:0.02em;
+  }
+  .log-entry{
+    display:flex;
+    gap:0.8em;
+    padding:0.5em 0;
+    border-bottom:1px dotted var(--rule);
+  }
+  .log-entry .time{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.75em;
+    color:var(--ink-faint);
+    flex-shrink:0;
+    padding-top:0.15em;
+  }
+  .log-entry .text{ flex:1; font-size:0.95em; white-space:pre-wrap; }
+  .log-entry .del{
+    background:none; border:none; color:var(--ink-faint);
+    cursor:pointer; opacity:0; transition:opacity .12s;
+  }
+  .log-entry:hover .del{ opacity:1; }
+
+  footer.note{
+    text-align:center;
+    margin-top:2.5em;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72em;
+    color:var(--ink-faint);
+  }
+
+  @media (max-width:560px){
+    .tab{ font-size:0.92em; padding:0.5em 0.8em 0.45em; }
+    header.top h1{ font-size:1.6em; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>สมุดงาน</h1>
+    <div class="date" id="todayLabel"></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <div class="tab active" data-cat="procurement">งานจัดซื้อ</div>
+    <div class="tab" data-cat="tutoring">งานสอนพิเศษ</div>
+    <div class="tab" data-cat="personal">งานส่วนตัว</div>
+  </div>
+
+  <div class="panel" data-cat="procurement">
+    <div class="quickadd" data-form="procurement">
+      <input type="text" placeholder="เพิ่มงานจัดซื้อ...">
+      <select class="prio">
+        <option value="med">กลาง</option>
+        <option value="high">สูง</option>
+        <option value="low">ต่ำ</option>
+      </select>
+      <input type="date" class="due">
+      <button type="button">+ เพิ่ม</button>
+    </div>
+    <ul class="tasks" data-list="procurement"></ul>
+    <div class="empty" data-empty="procurement" style="display:none;">ยังไม่มีงาน — เริ่มพิมพ์ด้านบนได้เลย</div>
+    <div class="done-toggle" data-donetoggle="procurement">▸ เสร็จแล้ว (<span data-donecount="procurement">0</span>)</div>
+    <ul class="tasks done-list" data-donelist="procurement"></ul>
+  </div>
+
+  <div class="panel" data-cat="tutoring" style="display:none;">
+    <div class="quickadd" data-form="tutoring">
+      <input type="text" placeholder="เพิ่มงานสอนพิเศษ...">
+      <select class="prio">
+        <option value="med">กลาง</option>
+        <option value="high">สูง</option>
+        <option value="low">ต่ำ</option>
+      </select>
+      <input type="date" class="due">
+      <button type="button">+ เพิ่ม</button>
+    </div>
+    <ul class="tasks" data-list="tutoring"></ul>
+    <div class="empty" data-empty="tutoring" style="display:none;">ยังไม่มีงาน — เริ่มพิมพ์ด้านบนได้เลย</div>
+    <div class="done-toggle" data-donetoggle="tutoring">▸ เสร็จแล้ว (<span data-donecount="tutoring">0</span>)</div>
+    <ul class="tasks done-list" data-donelist="tutoring"></ul>
+  </div>
+
+  <div class="panel" data-cat="personal" style="display:none;">
+    <div class="quickadd" data-form="personal">
+      <input type="text" placeholder="เพิ่มงานส่วนตัว / งานอดิเรก...">
+      <select class="prio">
+        <option value="med">กลาง</option>
+        <option value="high">สูง</option>
+        <option value="low">ต่ำ</option>
+      </select>
+      <input type="date" class="due">
+      <button type="button">+ เพิ่ม</button>
+    </div>
+    <ul class="tasks" data-list="personal"></ul>
+    <div class="empty" data-empty="personal" style="display:none;">ยังไม่มีงาน — เริ่มพิมพ์ด้านบนได้เลย</div>
+    <div class="done-toggle" data-donetoggle="personal">▸ เสร็จแล้ว (<span data-donecount="personal">0</span>)</div>
+    <ul class="tasks done-list" data-donelist="personal"></ul>
+
+    <div class="log-section">
+      <h2>บันทึกประจำวัน</h2>
+      <div class="log-add">
+        <textarea id="logInput" placeholder="วันนี้ทำอะไรไปบ้าง เช่น อ่านหนังสือถึงบทที่ 5, เขียนโค้ดฟีเจอร์ login เสร็จ..." rows="2"></textarea>
+        <button type="button" id="logAddBtn">บันทึก</button>
+      </div>
+      <div id="logList"></div>
+      <div class="empty" id="logEmpty" style="display:none;">ยังไม่มีบันทึก — เริ่มเขียนด้านบนได้เลย</div>
+    </div>
+  </div>
+
+  <footer class="note">ข้อมูลถูกบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น (localStorage) — ไฟล์เดียวจบ ไม่ต้องมีอินเทอร์เน็ต</footer>
+</div>
+
+<script>
+(function(){
+  const CATS = ['procurement','tutoring','personal'];
+  const STORE_KEY = 'task-ledger-v1';
+  const PRIO_LABEL = { high:'สูง', med:'กลาง', low:'ต่ำ' };
+  const PRIO_ORDER = { high:0, med:1, low:2 };
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return { tasks:{procurement:[],tutoring:[],personal:[]}, log:[] };
+  }
+  let state = loadState();
+  CATS.forEach(c=>{ if(!state.tasks[c]) state.tasks[c]=[]; });
+  if(!state.log) state.log = [];
+
+  function save(){
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  }
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function fmtDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return d.getDate() + ' ' + months[d.getMonth()];
+  }
+  function todayLabel(){
+    const d = new Date();
+    const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    return 'วัน' + days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + (d.getFullYear()+543);
+  }
+  document.getElementById('todayLabel').textContent = todayLabel();
+
+  // ---- Tabs ----
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.style.display='none');
+      tab.classList.add('active');
+      document.querySelector('.panel[data-cat="'+tab.dataset.cat+'"]').style.display='block';
+    });
+  });
+
+  // ---- Task rendering ----
+  function renderTasks(cat){
+    const list = document.querySelector('[data-list="'+cat+'"]');
+    const doneList = document.querySelector('[data-donelist="'+cat+'"]');
+    const emptyEl = document.querySelector('[data-empty="'+cat+'"]');
+    list.innerHTML=''; doneList.innerHTML='';
+    const items = state.tasks[cat];
+    const active = items.filter(t=>!t.done).sort((a,b)=> (a.order??0) - (b.order??0));
+    const done = items.filter(t=>t.done);
+
+    emptyEl.style.display = active.length===0 ? 'block' : 'none';
+
+    active.forEach(t=> list.appendChild(taskRow(cat, t, false)));
+    done.forEach(t=> doneList.appendChild(taskRow(cat, t, true)));
+    document.querySelector('[data-donecount="'+cat+'"]').textContent = done.length;
+  }
+
+  function taskRow(cat, t, isDone){
+    const li = document.createElement('li');
+    li.className = 'task' + (isDone ? ' done' : '');
+    li.draggable = !isDone;
+    li.dataset.id = t.id;
+
+    const handle = document.createElement('span');
+    handle.className='handle';
+    handle.textContent = isDone ? '' : '⋮⋮';
+    li.appendChild(handle);
+
+    const cb = document.createElement('input');
+    cb.type='checkbox'; cb.checked = !!t.done;
+    cb.addEventListener('change', ()=>{
+      t.done = cb.checked;
+      save(); renderTasks(cat);
+    });
+    li.appendChild(cb);
+
+    const name = document.createElement('span');
+    name.className='name'; name.textContent = t.name;
+    li.appendChild(name);
+
+    if(t.due){
+      const due = document.createElement('span');
+      due.className='due'; due.textContent = fmtDate(t.due);
+      li.appendChild(due);
+    }
+
+    const badge = document.createElement('span');
+    badge.className='badge p-'+(t.prio||'med');
+    badge.textContent = PRIO_LABEL[t.prio||'med'];
+    li.appendChild(badge);
+
+    const del = document.createElement('button');
+    del.className='del'; del.type='button'; del.innerHTML='✕';
+    del.addEventListener('click', ()=>{
+      state.tasks[cat] = state.tasks[cat].filter(x=>x.id!==t.id);
+      save(); renderTasks(cat);
+    });
+    li.appendChild(del);
+
+    if(!isDone){
+      li.addEventListener('dragstart', ()=>{ li.classList.add('dragging'); });
+      li.addEventListener('dragend', ()=>{ li.classList.remove('dragging'); reorderFromDOM(cat); });
+    }
+
+    return li;
+  }
+
+  function reorderFromDOM(cat){
+    const list = document.querySelector('[data-list="'+cat+'"]');
+    const ids = Array.from(list.children).map(li=>li.dataset.id);
+    ids.forEach((id, idx)=>{
+      const t = state.tasks[cat].find(x=>x.id===id);
+      if(t) t.order = idx;
+    });
+    save();
+  }
+
+  document.querySelectorAll('[data-list]').forEach(list=>{
+    list.addEventListener('dragover', e=>{
+      e.preventDefault();
+      const dragging = list.querySelector('.dragging');
+      if(!dragging) return;
+      const after = getDragAfterElement(list, e.clientY);
+      if(after == null){ list.appendChild(dragging); }
+      else{ list.insertBefore(dragging, after); }
+    });
+  });
+  function getDragAfterElement(container, y){
+    const els = [...container.querySelectorAll('.task:not(.dragging)')];
+    return els.reduce((closest, child)=>{
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height/2;
+      if(offset < 0 && offset > closest.offset){
+        return { offset, element: child };
+      } else { return closest; }
+    }, { offset: -Infinity }).element;
+  }
+
+  document.querySelectorAll('[data-donetoggle]').forEach(tog=>{
+    tog.addEventListener('click', ()=>{
+      const cat = tog.dataset.donetoggle;
+      const list = document.querySelector('[data-donelist="'+cat+'"]');
+      list.classList.toggle('show');
+      tog.textContent = (list.classList.contains('show') ? '▾ เสร็จแล้ว (' : '▸ เสร็จแล้ว (') + state.tasks[cat].filter(t=>t.done).length + ')';
+    });
+  });
+
+  document.querySelectorAll('[data-form]').forEach(form=>{
+    const cat = form.dataset.form;
+    const input = form.querySelector('input[type="text"]');
+    const prio = form.querySelector('.prio');
+    const due = form.querySelector('.due');
+    const btn = form.querySelector('button');
+
+    function addTask(){
+      const name = input.value.trim();
+      if(!name) return;
+      state.tasks[cat].push({
+        id: uid(), name, prio: prio.value, due: due.value || '', done:false,
+        order: state.tasks[cat].filter(t=>!t.done).length
+      });
+      input.value=''; due.value=''; prio.value='med';
+      save(); renderTasks(cat);
+      input.focus();
+    }
+    btn.addEventListener('click', addTask);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+  });
+
+  CATS.forEach(renderTasks);
+
+  // ---- Daily log ----
+  function renderLog(){
+    const wrap = document.getElementById('logList');
+    const emptyEl = document.getElementById('logEmpty');
+    wrap.innerHTML='';
+    if(state.log.length===0){ emptyEl.style.display='block'; return; }
+    emptyEl.style.display='none';
+
+    const byDay = {};
+    state.log.slice().sort((a,b)=> b.ts - a.ts).forEach(e=>{
+      const d = new Date(e.ts);
+      const key = d.toISOString().slice(0,10);
+      if(!byDay[key]) byDay[key]=[];
+      byDay[key].push(e);
+    });
+
+    Object.keys(byDay).sort().reverse().forEach(key=>{
+      const dayDiv = document.createElement('div');
+      dayDiv.className='log-day';
+      const label = document.createElement('div');
+      label.className='day-label';
+      label.textContent = fmtDate(key);
+      dayDiv.appendChild(label);
+
+      byDay[key].forEach(e=>{
+        const row = document.createElement('div');
+        row.className='log-entry';
+        const time = document.createElement('span');
+        time.className='time';
+        const d = new Date(e.ts);
+        time.textContent = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+        row.appendChild(time);
+        const text = document.createElement('span');
+        text.className='text'; text.textContent = e.text;
+        row.appendChild(text);
+        const del = document.createElement('button');
+        del.className='del'; del.type='button'; del.innerHTML='✕';
+        del.addEventListener('click', ()=>{
+          state.log = state.log.filter(x=>x.id!==e.id);
+          save(); renderLog();
+        });
+        row.appendChild(del);
+        dayDiv.appendChild(row);
+      });
+      wrap.appendChild(dayDiv);
+    });
+  }
+
+  document.getElementById('logAddBtn').addEventListener('click', addLog);
+  document.getElementById('logInput').addEventListener('keydown', e=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); addLog(); }
+  });
+  function addLog(){
+    const ta = document.getElementById('logInput');
+    const text = ta.value.trim();
+    if(!text) return;
+    state.log.push({ id: uid(), text, ts: Date.now() });
+    ta.value='';
+    save(); renderLog();
+  }
+
+  renderLog();
+})();
+</script>
+</body>
+</html>
