@@ -79,6 +79,12 @@
         <div class="section-title"><h3>หมวดงาน</h3></div>
         <div id="categories"></div>
       </section>
+
+      <section class="card pad" style="margin-top:16px">
+        <div class="section-title"><h3>🧠 Work Memory</h3><small>สิ่งที่ระบบจำจากงาน</small></div>
+        <div class="toolbar" style="margin-top:0"><input class="search" id="memorySearch" placeholder="ค้นหา Code / PO / Supplier / Customer..."><button class="ghost" id="memoryBtn">ค้น</button></div>
+        <div id="memorySummary" style="margin-top:10px"></div>
+      </section>
     </aside>
   </div>
 </div>
@@ -162,6 +168,35 @@
   }
 
 
+  function memoryEntities(){
+    const map={};
+    state.tasks.forEach(t=>{
+      ensureTaskData(t);
+      const ents=extractEntities(t.name+' '+(t.note||''));
+      ents.forEach(e=>{
+        const key=e.label+'|'+e.value.toUpperCase();
+        if(!map[key])map[key]={label:e.label,value:e.value.toUpperCase(),tasks:[]};
+        map[key].tasks.push(t);
+      });
+    });
+    return Object.values(map);
+  }
+  function renderMemory(query){
+    const el=document.getElementById('memorySummary'); if(!el)return;
+    const q=(query||'').trim().toLowerCase();
+    let items=memoryEntities().filter(x=>!q||(x.label+' '+x.value).toLowerCase().includes(q)||x.tasks.some(t=>(t.name+' '+(t.note||'')).toLowerCase().includes(q)));
+    items.sort((a,b)=>b.tasks.filter(t=>t.status!=='done').length-a.tasks.filter(t=>t.status!=='done').length);
+    if(!items.length){el.innerHTML='<div class="empty">ยังไม่มีข้อมูลที่ตรงกัน — ลองค้นหา BEPR, PO หรือ supplier</div>';return;}
+    el.innerHTML='';
+    items.slice(0,8).forEach(item=>{
+      const open=item.tasks.filter(t=>t.status!=='done').length, wait=item.tasks.filter(t=>t.status==='waiting').length;
+      const card=document.createElement('div');card.className='entity-card';
+      const b=document.createElement('b');b.textContent=item.label+': '+item.value;card.appendChild(b);
+      const s=document.createElement('span');s.textContent=item.tasks.length+' งาน · ค้าง '+open+' · รอติดตาม '+wait;card.appendChild(s);
+      item.tasks.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,3).forEach(t=>{const x=document.createElement('span');x.textContent='• '+t.name+' — '+(t.status==='done'?'เสร็จแล้ว':t.status==='waiting'?'รอติดตาม':'กำลังทำ');card.appendChild(x)});
+      el.appendChild(card);
+    });
+  }
   function extractEntities(text){
     const out=[],seen=new Set();
     const add=(label,value)=>{const key=label+value;if(value&&!seen.has(key)){seen.add(key);out.push({label,value})}};
@@ -249,6 +284,8 @@
   document.getElementById('addBtn').onclick=()=>{const v=document.getElementById('quickInput').value.trim();if(v)addTask(v)};
   document.getElementById('quickInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const v=e.target.value.trim();if(v)addTask(v)}};
   document.getElementById('search').oninput=render;
+  document.getElementById('memorySearch').oninput=e=>renderMemory(e.target.value);
+  document.getElementById('memoryBtn').onclick=()=>renderMemory(document.getElementById('memorySearch').value);
   document.querySelectorAll('.filter').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()});
 
   function openEdit(t){editId=t.id;document.getElementById('mName').value=t.name;document.getElementById('mDue').value=t.due||'';document.getElementById('mPriority').value=t.priority;document.getElementById('mStatus').value=t.status;document.getElementById('mNote').value=t.note||'';document.getElementById('modal').style.display='flex'}
@@ -302,6 +339,7 @@
   document.getElementById('aiModal').onclick=e=>{if(e.target.id==='aiModal')document.getElementById('aiModal').style.display='none'};
 
   render();
+  renderMemory('');
 })();
 </script>
 </body>
